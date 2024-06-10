@@ -1,0 +1,4 @@
+Hello! Thank you for using my script!
+Usage is very simple
+Just head over to config.lua and it's self explainatory.
+Just drag and drop sql.sql file into your database, the script will create codes that are in config automaticly.

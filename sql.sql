@@ -1,0 +1,12 @@
+CREATE TABLE IF NOT EXISTS Domas_IC_Codes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    code VARCHAR(255) NOT NULL,
+    unique_code BOOLEAN,
+    times INT
+);
+
+CREATE TABLE IF NOT EXISTS Domas_IC_Players (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    player VARCHAR(255) NOT NULL,
+    code VARCHAR(255) NOT NULL
+);
