@@ -18,6 +18,11 @@ Config.Codes = {
         reward = {
             type = 'money', -- or item
             amount = 25000,
+        },
+        referral = {
+            enabled = true,
+            owner = 'license:123', -- Identifier of player who will get the reward bellow when this code is used.
+            reward = 1000, -- Money will be added to the owners account
         }
     },
     [2] = {
@@ -28,6 +33,11 @@ Config.Codes = {
             type = 'item',
             item = 'weapon_pistol',
             amount = 1,
+        },
+        referral = {
+            enabled = false,
+            owner = 'license:123', -- Identifier of player who will get the reward bellow when this code is used.
+            reward = 1000, -- Money will be added to the owners account
         }
     },
 }
@@ -40,6 +50,11 @@ Config.Text = {
     ['active_text'] = 'Code was activated!',
     ['active_player'] = 'Player: ',
     ['active_code'] = 'Code: ',
+    ['referral_notification'] = 'Your referral code has been used %d times and you have earned %d €.',
+    ['referral_reward'] = 'Referral Reward',
+    ['player_reward'] = 'Player was rewarded (Referrals)',
+    ['amount'] = 'Player got from referrals',
+    ['currency'] = '€',
     
 }
 
@@ -59,7 +74,7 @@ function AddMoney(playerId, amount)
         Debug("Giving money: "..amount.." to player: "..playerId)
         Notify("You used code and got "..amount..' €', playerId)
     else
-        Debug("You're using non supported framework, please edit the functions (AddMoney) for rewards at config.lua file! (line 62)")
+        Debug("You're using non supported framework, please edit the functions (AddMoney) for rewards at config.lua file! (line 77)")
     end
 end
 
@@ -80,7 +95,7 @@ function GiveItem(playerId, itemName, quantity)
         Debug("Giving item: " .. itemName .. " x" .. quantity .. " to player: " .. playerId)
         Notify("You used code and got " .. itemName, playerId)
     else
-        Debug("You're using non supported framework, please edit the functions (GiveItem) for rewards at config.lua file! (line 83)")
+        Debug("You're using non supported framework, please edit the functions (GiveItem) for rewards at config.lua file! (line 98)")
     end
 end
 
@@ -91,6 +106,6 @@ function Notify(text, playerId)
     elseif GetResourceState('qb-core') == 'started' then
         TriggerClientEvent('QBCore:Notify', playerId, text)
     else
-        Debug("You're using non supported framework, please edit the functions (Notify) for rewards at config.lua file! (line 94)")
+        Debug("You're using non supported framework, please edit the functions (Notify) for rewards at config.lua file! (line 109)")
     end
 end

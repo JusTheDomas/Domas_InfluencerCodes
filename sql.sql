@@ -10,3 +10,10 @@ CREATE TABLE IF NOT EXISTS Domas_IC_Players (
     player VARCHAR(255) NOT NULL,
     code VARCHAR(255) NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS Domas_IC_Referrals (
+    owner VARCHAR(250) NOT NULL,
+    ref_money INT(10) NOT NULL DEFAULT 0,
+    ref_times INT(10) NOT NULL DEFAULT 0,
+    PRIMARY KEY (owner)
+);

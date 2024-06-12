@@ -1,0 +1,12 @@
+AddEventHandler("QBCore:Client:OnPlayerLoaded", function()
+    Wait(15000)
+    local player = GetPlayerServerId(PlayerId(-1))
+    TriggerServerEvent("Domas_IC:checkReferralData", player)
+end)
+
+RegisterNetEvent('esx:playerLoaded')
+AddEventHandler('esx:playerLoaded',function(xPlayer, isNew, skin)
+    Wait(15000)
+    local player = GetPlayerServerId(PlayerId(-1))
+    TriggerServerEvent("Domas_IC:checkReferralData", player)
+end)

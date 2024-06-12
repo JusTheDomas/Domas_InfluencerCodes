@@ -91,8 +91,17 @@ function ProcessCodeActivation(playerId, identifier, codeData)
     -- Handle reward based on codeData
     HandleReward(codeData.code, playerId)
 
+    -- Get referral data and update if applicable
+    local referralData = GetReferralDataByCode(codeData.code)
+    if referralData and referralData.enabled then
+        Debug("Updating referral data for owner: " .. referralData.owner .. " with reward: " .. referralData.reward)
+        UpdateReferralData(referralData.owner, referralData.reward)
+    else
+        Debug("No referral data to update or referral is not enabled for code: " .. codeData.code)
+    end
+
     -- Log activation to Discord or other logging system
-    Log2Discord(codeData.code, playerId)
+    Log2Discord(codeData.code, playerId, 1, 0)
 
     -- Update remaining uses if applicable
     if codeData.times then
@@ -105,6 +114,30 @@ function ProcessCodeActivation(playerId, identifier, codeData)
             end
         end)
     end
+end
+
+-- Function to update referral data in the database
+function UpdateReferralData(owner, reward)
+    local query = "UPDATE Domas_IC_Referrals SET ref_money = ref_money + "..reward..", ref_times = ref_times + 1 WHERE owner = '"..owner.."'"
+    Debug("Executing SQL query to update referral data: " .. query)
+    
+    ExecuteSql(query, function(result)
+        Debug("SQL query executed, result: " .. tostring(result))
+        if result and type(result) == "table" and result.affectedRows and result.affectedRows > 0 then
+            Debug("Referral data updated for owner: " .. owner)
+        else
+            Debug("Failed to update referral data for owner: " .. owner .. ". The owner might not exist in the database.")
+            -- Additional debugging: fetch the owner from the database to confirm its existence
+            local fetchQuery = "SELECT owner FROM Domas_IC_Referrals WHERE owner = '"..owner.."'" -- For some reason only that way it will work
+            ExecuteSql(fetchQuery, {['@owner'] = owner}, function(fetchResult)
+                if fetchResult and #fetchResult > 0 then
+                    Debug("Owner exists in the database: " .. fetchResult[1].owner)
+                else
+                    Debug("Owner does not exist in the database.")
+                end
+            end)
+        end
+    end)
 end
 
 -- Define a function to handle rewards based on the code
@@ -140,6 +173,17 @@ function GetRewardByCode(code)
     for _, data in pairs(Config.Codes) do
         if data.code == code then
             return data.reward  -- Return the reward data associated with the code
+        end
+    end
+
+    return nil  -- Return nil if code is not found in Config.Codes
+end
+
+-- Function to get referral data based on the code
+function GetReferralDataByCode(code)
+    for _, data in pairs(Config.Codes) do
+        if data.code == code then
+            return data.referral  -- Return the referral data associated with the code
         end
     end
 
@@ -223,6 +267,16 @@ function InsertCodesOnResourceStart()
                 ExecuteSql(insertQuery, {}, function(rowsChanged)
                     Debug("Inserted code '" .. code .. "' into database.")
                 end)
+
+                -- If referral is enabled, insert the owner into Domas_IC_Referrals
+                if codeData.referral and codeData.referral.enabled then
+                    local owner = codeData.referral.owner
+                    local refQuery = ("INSERT INTO Domas_IC_Referrals (owner, ref_money, ref_times) VALUES ('%s', 0, 0) ON DUPLICATE KEY UPDATE owner = owner;"):format(owner)
+
+                    ExecuteSql(refQuery, {}, function(rowsChanged)
+                        Debug("Inserted or updated referral data for owner '" .. owner .. "' into database.")
+                    end)
+                end
             else
                 Debug("Code '" .. code .. "' already exists in the database, skipping insertion.")
             end
@@ -230,26 +284,53 @@ function InsertCodesOnResourceStart()
     end
 end
 
-function Log2Discord(kodas, playerId)
-    local name = GetPlayerName(playerId)
-    if Config.DiscordLog then
-        local embeds = {
-            {
-                ["title"]= Config.Text['active_new'],
-                ["type"]="rich",
-                ["color"] = 1770588,
-                ["footer"]=  {
-                    ["text"]= Config.Text['active_text'],
-                },
-                ["fields"] = {
-                    {
-                        name = Config.Text['active_player']..name,
-                        value = Config.Text['active_code']..kodas,
+function Log2Discord(kodas, playerId, type, money)
+    if type == 1 then -- For code activation
+        local name = GetPlayerName(playerId)
+        if Config.DiscordLog then
+            local embeds = {
+                {
+                    ["title"]= Config.Text['active_new'],
+                    ["type"]="rich",
+                    ["color"] = 1770588,
+                    ["footer"]=  {
+                        ["text"]= Config.Text['active_text'],
                     },
+                    ["fields"] = {
+                        {
+                            name = Config.Text['active_player']..name,
+                            value = Config.Text['active_code']..kodas,
+                        },
+                    }
                 }
             }
-        }
-        PerformHttpRequest(Config.Webhook, function(err, text, headers) end, 'POST', json.encode({ username = name,embeds = embeds}), { ['Content-Type'] = 'application/json' })
+            PerformHttpRequest(Config.Webhook, function(err, text, headers) end, 'POST', json.encode({ username = name,embeds = embeds}), { ['Content-Type'] = 'application/json' })
+        end
+    elseif type == 2 then
+        if Config.DiscordLog then
+            local name = GetPlayerName(playerId)
+            local embeds = {
+                {
+                    ["title"]= Config.Text['referral_reward'],
+                    ["type"]="rich",
+                    ["color"] = 1770588,
+                    ["footer"]=  {
+                        ["text"]= Config.Text['player_reward'],
+                    },
+                    ["fields"] = {
+                        {
+                            name = Config.Text['active_player']..name,
+                            value = '',
+                        },
+                        {
+                            name = Config.Text['amount'],
+                            value = money..' '..Config.Text['currency'],
+                        },
+                    }
+                }
+            }
+            PerformHttpRequest(Config.Webhook, function(err, text, headers) end, 'POST', json.encode({ username = name,embeds = embeds}), { ['Content-Type'] = 'application/json' })
+        end
     end
 end
 
